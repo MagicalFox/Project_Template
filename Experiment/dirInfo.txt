@@ -1,0 +1,1 @@
+The Experiment folder is a storag directory used to backup all previously done experiments. The Souce Code folder used for that experiment, as well as the Results folder generated during that experiment, are copied and pasted into this foler after every experiment. Before the next experiment the Results folder will be emptied. 

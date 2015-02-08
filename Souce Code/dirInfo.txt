@@ -1,0 +1,1 @@
+All code goes into this folder. All results will be stored in "../Results/". Data will not be included in the project folder. "../../Data/XXX" will be the place to go unless otherwise planned. 

@@ -1,0 +1,1 @@
+This folder is for current experimental results. Before starting, this folder needs to be cleared except the README file and dirInfo file. After the experiment this folder will be copied and pasted into the corresponding experiment folder in the Experiment directory. 
