@@ -3,7 +3,7 @@
 # In terminal run:  python batch_general.py -m tempCode -p 'p1 [ BB, UCF101] p2 [3, 1]'
 # Note:
 # 1. -m flag model name, the model has to have the code in def main()
-# 2. -p flag parameters which is passed in as one single string variable. each hyperparameter name is followed by a list of values in a pire of [] separated by space. The values in the lists are separated by ','.  
+# 2. -p flag parameters which is passed in as one single string variable. each hyperparameter name is followed by a list of values in a pire of [], even if there is only one value, separated by space. The values in the lists are separated by ','.  
 # 3. string variable values can be in pairs of '' or "" or none.
 # 4. Log file use the naming convention that each token is separated by '_' so avoid naming variables using '_'
 # 5. Parameters are stored in both the start and finish log file. If the parameter has large volume, use -s 0 flag to supress saving.
@@ -12,8 +12,7 @@
 # python batch_general.py -m tempCode -p 'p1 [ BB, UCF101] p2 [3, 1]'
 # Example 2:
 # python batch_general.py -m tempCode -p 'p1 [ "BB", "UCF101"] p2 [3, 1]'
-# The code support empty argument
-
+# The code support empty argument but the current version doesn't support Python's default value syntax
 
 
 
@@ -70,7 +69,7 @@ def runExp(fname_command, varargin,fname_prefix=[],save = 1):
             print 'Running '+ str_cmd
             # evoke function
             cmd_tokens = re.split(r'[()]',str_cmd)
-            module_name = cmd_tokens[0]
+            module_name = cmd_tokens[0].replace('.py','')
             parameters = cmd_tokens[1].split(',')
             parameters = [convertType(parameters[i]) for i in range(len(parameters))] 
             if save ==1:
