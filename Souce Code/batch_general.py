@@ -1,3 +1,23 @@
+# Usage:
+# make sure that the Project Template folder structure is followed.  
+# In terminal run:  python batch_general.py -m tempCode -p 'p1 [ BB, UCF101] p2 [3, 1]'
+# Note:
+# 1. -m flag model name, the model has to have the code in def main()
+# 2. -p flag parameters which is passed in as one single string variable. each hyperparameter name is followed by a list of values in a pire of [] separated by space. The values in the lists are separated by ','.  
+# 3. string variable values can be in pairs of '' or "" or none.
+# 4. Log file use the naming convention that each token is separated by '_' so avoid naming variables using '_'
+# 5. Parameters are stored in both the start and finish log file. If the parameter has large volume, use -s 0 flag to supress saving.
+ 
+# Example: 
+# python batch_general.py -m tempCode -p 'p1 [ BB, UCF101] p2 [3, 1]'
+# Example 2:
+# python batch_general.py -m tempCode -p 'p1 [ "BB", "UCF101"] p2 [3, 1]'
+# The code support empty argument
+
+
+
+
+
 import numpy as np
 import os
 import re
@@ -5,25 +25,26 @@ import pylab as pl
 import sys
 import getopt
 import pdb
-from random import shuffle
+import time
+import random
 from os.path import isfile
 
-def strType(var):
+def convertType(var):
     try:
-        if int(var) == float(var):
-            return 'int'
+        return  int(var)
     except:
         try:
-            float(var)
-            return 'float'
+            return float(var)
         except:
-            return 'str'
+            return var
 
-def runExp(fname_command, varargin,fname_prefix=[]):
-    pdb.set_trace()
+def runExp(fname_command, varargin,fname_prefix=[],save = 1):
 
     if len(fname_prefix) ==0:
-        fname_prefix = '../Results/'+fname_command
+        Log_dir = '../Results/Log/'
+        if not os.path.isdir(Log_dir):
+            os.makedirs(Log_dir)
+        fname_prefix = '../Results/Log/'+fname_command
         fname_command = fname_command + '('
 
     if len(varargin)>1:
@@ -32,53 +53,66 @@ def runExp(fname_command, varargin,fname_prefix=[]):
         varargin = varargin[2:]
 
     #for val in shuffle(valist)
-    shuffle(vallist)
+    random.shuffle(vallist)
     for val in vallist:
         fname_prefix2 = fname_prefix+'_'+valname+'_'+val
-        fname_command2 = fname_command+'_'+val
+        fname_command2 = fname_command+val
 
         if len(varargin) == 0:
-            log_fname_started = fname_prefix2+'.started'
-            log_fname_finished = fname_prefix2+'.finished'
+            log_fname_started = fname_prefix2+'.started.npy'
+            log_fname_finished = fname_prefix2+'.finished.npy'
             if isfile(log_fname_started) or isfile(log_fname_finished):
                 print 'file '+fname_prefix2+' exists... skip!'
                 continue
             strat_log_id = open(log_fname_started,'w')
-
             # run experiment
             str_cmd = fname_command2+')'
             print 'Running '+ str_cmd
-
             # evoke function
+            cmd_tokens = re.split(r'[()]',str_cmd)
+            module_name = cmd_tokens[0]
+            parameters = cmd_tokens[1].split(',')
+            parameters = [convertType(parameters[i]) for i in range(len(parameters))] 
+            if save ==1:
+                np.save(log_fname_started,parameters)
+
+            module = __import__(module_name)
+            module.main(parameters)
             os.remove(log_fname_started)
             finish_log_id = open(log_fname_finished,'w')
-
+            if save ==1: 
+                np.save(log_fname_finished,parameters)
         elif len(varargin) == 1:
             sys.exit('length of varargin should be even number!')
         else:
-            batch_general(fname_command2+',', fname_prefix2,varargin)
+            runExp(fname_command2+',', varargin,fname_prefix2, save = save)
 
 
+
+
+save =1
 
 try:
-    opts, args=getopt.getopt(sys.argv[1:], "hm:p:",
-            ["module_name=","parameters="])
+    opts, args=getopt.getopt(sys.argv[1:], "hm:p:s:",
+            ["module_name=","parameters=","save:"])
 except getopt.GetoptError:
     print 'gae_demo.py -i <inputfile>'
     sys.exit(2)
 
 for opt, arg in opts:
     if opt =='-h':
-    	exit()
+        exit()
     elif opt in("-m","--module_name="):
-	module_name = arg
+        module_name = arg
     elif opt in("-p","--parameters="):
-	parameters = arg
+        parameters = arg
+    elif opt in("-s","--save="):
+        save = int(arg)
 
+
+random.seed(time.clock())
 varargin_tokens = re.split(r'[\[\]]',parameters)[:-1]
-
-runExp(module_name, varargin_tokens,[])
-
+runExp(module_name, varargin_tokens,fname_prefix=[],save=save)
 '''    
     result_dir = '../Results/'
     if not os.isdir(result_dir):

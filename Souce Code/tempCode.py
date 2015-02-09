@@ -1,11 +1,16 @@
 import numpy as np
 import pylab as pl
+import pdb
+import csv
+import sys
 
-
-
-
-def main(hyp1,hyp2,hyp3):
+def main(parameters):
+    try:
+        hyp1 = parameters[0]
+        hyp2 = parameters[1]
+    except:
+        sys.exit('Number of passed in arguments does not match with the function main.')
+    result_dir = '../Results/'
+    result_file_name = result_dir + 'Exp_hyp1_'+str(hyp1)+'_hyp2_'+str(hyp2)+'_.csv'
     # Actuall code goes in here
-    result = [hyp1,hyp2,hyp3]
-    return result
-    #np.savetxt(result_dir+'hyp1_'+str(hyp1)+'_hyp2_'+str(hyp2)+'_hyp3_'+str(hyp3)+'_.csv',[hyp1,hyp2,hyp3],delimiter=',')
+    print result_file_name 
