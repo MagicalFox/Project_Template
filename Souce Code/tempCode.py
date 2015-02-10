@@ -13,4 +13,5 @@ def main(parameters):
     result_dir = '../Results/'
     result_file_name = result_dir + 'Exp_hyp1_'+str(hyp1)+'_hyp2_'+str(hyp2)+'_.csv'
     # Actuall code goes in here
+    pl.pause(5)
     print result_file_name 

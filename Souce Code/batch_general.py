@@ -16,7 +16,7 @@
 
 
 
-
+import subprocess
 import smtplib
 import numpy as np
 import os
@@ -81,6 +81,10 @@ def runExp(fname_command, varargin,fname_prefix=[],save = 1,server=[]):
             finish_log_id = open(log_fname_finished,'w')
             if server != []:
                 msg = 'Subject: '+str_cmd+' has finished.'+'\n\n'
+                hostname = subprocess.call("hostname", shell=True) 
+                screen_id = subprocess.call("echo $STY", shell=True)
+                win_id = subprocess.call("echo $WINDOW",shell=True)   
+                msg = msg+'Job finished. \nHost: '+hostname+'\nScreen: '+screen_id+'\n Window: '+win_id+'\n'
                 if save == 1:
                     msg = msg+'Parameters has been saved to '+log_fname_finished
                 server.sendmail(fromAdd,toAdd,msg)
