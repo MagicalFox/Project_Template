@@ -17,7 +17,7 @@
 
 
 
-
+import smtplib
 import numpy as np
 import os
 import re
@@ -38,7 +38,7 @@ def convertType(var):
         except:
             return var
 
-def runExp(fname_command, varargin,fname_prefix=[],save = 1):
+def runExp(fname_command, varargin,fname_prefix=[],save = 1,server=[]):
 
     if len(fname_prefix) ==0:
         Log_dir = '../Results/Log/'
@@ -79,21 +79,28 @@ def runExp(fname_command, varargin,fname_prefix=[],save = 1):
             module.main(parameters)
             os.remove(log_fname_started)
             finish_log_id = open(log_fname_finished,'w')
+            if server != []:
+                msg = 'Subject: '+str_cmd+' has finished.'+'\n\n'
+                if save == 1:
+                    msg = msg+'Parameters has been saved to '+log_fname_finished
+                server.sendmail(fromAdd,toAdd,msg)
+                
             if save ==1: 
                 np.save(log_fname_finished,parameters)
         elif len(varargin) == 1:
             sys.exit('length of varargin should be even number!')
         else:
-            runExp(fname_command2+',', varargin,fname_prefix2, save = save)
+            runExp(fname_command2+',', varargin,fname_prefix2, save = save,server=server)
 
 
 
 
 save =1
-
+email = 1
+server = []
 try:
-    opts, args=getopt.getopt(sys.argv[1:], "hm:p:s:",
-            ["module_name=","parameters=","save:"])
+    opts, args=getopt.getopt(sys.argv[1:], "hm:p:s:e:",
+            ["module_name=","parameters=","save=","email="])
 except getopt.GetoptError:
     print 'gae_demo.py -i <inputfile>'
     sys.exit(2)
@@ -107,11 +114,19 @@ for opt, arg in opts:
         parameters = arg
     elif opt in("-s","--save="):
         save = int(arg)
-
+    elif opt in("-e","--email="):
+        email = int(arg)
 
 random.seed(time.clock())
 varargin_tokens = re.split(r'[\[\]]',parameters)[:-1]
-runExp(module_name, varargin_tokens,fname_prefix=[],save=save)
+
+if email==1:
+    server = smtplib.SMTP('smtp.gmail.com:587')
+    fromAdd = 'yeliu.system.mail@gmail.com'
+    toAdd = 'yeliu.system.mail@gmail.com'
+    server.starttls()
+    server.login('yeliu.system.mail@gmail.com','machinelearning')
+runExp(module_name, varargin_tokens,fname_prefix=[],save=save,server=server)
 '''    
     result_dir = '../Results/'
     if not os.isdir(result_dir):
