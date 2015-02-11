@@ -75,16 +75,21 @@ def runExp(fname_command, varargin,fname_prefix=[],save = 1,server=[]):
             parameters = [convertType(parameters[i]) for i in range(len(parameters))] 
             if save ==1:
                 np.save(log_fname_started,parameters)
+ 
+            # execute main file
             module = __import__(module_name)
+            starttime = time.time()
             module.main(parameters)
+            exe_time = time.time()-starttime 
             os.remove(log_fname_started)
+            print str_cmd+' is finished. Using '+str(exe_time)+' seconds.'
             finish_log_id = open(log_fname_finished,'w')
             if server != []:
                 msg = 'Subject: '+str_cmd+' has finished.'+'\n\n'
 		hostname = subprocess.Popen('hostname', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
                 screen_id = subprocess.Popen('echo $STY', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
                 win_id = subprocess.Popen('echo $WINDOW', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
-                msg = msg+'Job finished. \nHost: '+hostname+'Screen: '+screen_id+'Window: '+str(win_id)+'\n'
+                msg = msg+'Job finished. \nHost: '+hostname+'Screen: '+screen_id+'Window: '+str(win_id)+'\n'+'Using '+str(exe_time)+' seconds.'
                 if save == 1:
                     msg = msg+'Parameters has been saved to '+log_fname_finished
                 try:
