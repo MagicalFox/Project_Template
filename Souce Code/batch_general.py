@@ -87,7 +87,10 @@ def runExp(fname_command, varargin,fname_prefix=[],save = 1,server=[]):
                 msg = msg+'Job finished. \nHost: '+hostname+'Screen: '+screen_id+'Window: '+str(win_id)+'\n'
                 if save == 1:
                     msg = msg+'Parameters has been saved to '+log_fname_finished
-                server.sendmail(fromAdd,toAdd,msg)
+                try:
+                    server.sendmail(fromAdd,toAdd,msg)
+                except:
+                    print 'Email Error: could not send email for job: ' + str_cmd
                 
             if save ==1: 
                 np.save(log_fname_finished,parameters)
