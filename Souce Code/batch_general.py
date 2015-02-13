@@ -134,10 +134,10 @@ varargin_tokens = re.split(r'[\[\]]',parameters)[:-1]
 
 if email==1:
     server = smtplib.SMTP('smtp.gmail.com:587')
-    fromAdd = 'yeliu.system.mail@gmail.com'
-    toAdd = 'yeliu.system.mail@gmail.com'
+    fromAdd = 'GmailAddress'
+    toAdd = 'emailAddress'
     server.starttls()
-    server.login('yeliu.system.mail@gmail.com','machinelearning')
+    server.login('gmailaccount','emailpassword')
 runExp(module_name, varargin_tokens,fname_prefix=[],save=save,server=server)
 '''    
     result_dir = '../Results/'
