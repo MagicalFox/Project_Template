@@ -28,6 +28,7 @@ import pdb
 import time
 import random
 from os.path import isfile
+from email.mime.text import MIMEText
 
 def convertType(var):
     try:
@@ -38,13 +39,13 @@ def convertType(var):
         except:
             return var
 
-def runExp(fname_command, varargin,fname_prefix=[],save = 1,server=[]):
+def runExp(fname_command, varargin,fname_prefix=[],save = 1,email=1,toAddr=[],fromAddr=[],):
 
     if len(fname_prefix) ==0:
-        Log_dir = '../Results/Log/'
+        Log_dir = './Log/'
         if not os.path.isdir(Log_dir):
             os.makedirs(Log_dir)
-        fname_prefix = '../Results/Log/'+fname_command
+        fname_prefix = './Log/'+fname_command
         fname_command = fname_command + '('
 
     if len(varargin)>1:
@@ -84,35 +85,38 @@ def runExp(fname_command, varargin,fname_prefix=[],save = 1,server=[]):
             os.remove(log_fname_started)
             print str_cmd+' is finished. Using '+str(exe_time)+' seconds.'
             finish_log_id = open(log_fname_finished,'w')
-            if server != []:
-                msg = 'Subject: '+str_cmd+' has finished.'+'\n\n'
-		hostname = subprocess.Popen('hostname', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
+            if email != 0:
+                str_subject = str_cmd+' has finished.\n\n'
+                hostname = subprocess.Popen('hostname', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
                 screen_id = subprocess.Popen('echo $STY', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
                 win_id = subprocess.Popen('echo $WINDOW', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
-                msg = msg+'Job finished. \nHost: '+hostname+'Screen: '+screen_id+'Window: '+str(win_id)+'\n'+'Using '+str(exe_time)+' seconds.'
+                str_content = 'Job finished. \nHost: '+hostname+'Screen: '+screen_id+'Window: '+str(win_id)+'\n'+'Using '+str(exe_time)+' seconds.\n'
                 if save == 1:
-                    msg = msg+'Parameters has been saved to '+log_fname_finished
-                try:
-                    server.sendmail(fromAdd,toAdd,msg)
-                except:
-                    print 'Email Error: could not send email for job: ' + str_cmd
-                
+                    str_content = str_content+'Parameters has been saved to '+log_fname_finished+'\n'
+                msg = MIMEText(str_content)
+                msg["To"] = toAddr
+                msg["From"] = fromAddr
+                msg["Subject"] = str_subject
+                pdb.set_trace()
+                p = subprocess.Popen(["sendmail","-t","oi"],stdin=subprocess.PIPE)
+                p.communicate(msg.as_string())
             if save ==1: 
                 np.save(log_fname_finished,parameters)
         elif len(varargin) == 1:
             sys.exit('length of varargin should be even number!')
         else:
-            runExp(fname_command2+',', varargin,fname_prefix2, save = save,server=server)
+            runExp(fname_command2+',', varargin,fname_prefix2, save = save,email=email,toAddr = toAddr,fromAddr = fromAddr)
 
 
 
 
 save =1
 email = 1
-server = []
+toAddr = 'yeliu.system.mail@gmail.com'
+fromAddr = []
 try:
-    opts, args=getopt.getopt(sys.argv[1:], "hm:p:s:e:",
-            ["module_name=","parameters=","save=","email="])
+    opts, args=getopt.getopt(sys.argv[1:], "hm:p:s:e:t:f:",
+            ["module_name=","parameters=","save=","email=","toAddr=","fromAddr="])
 except getopt.GetoptError:
     print 'gae_demo.py -i <inputfile>'
     sys.exit(2)
@@ -128,17 +132,15 @@ for opt, arg in opts:
         save = int(arg)
     elif opt in("-e","--email="):
         email = int(arg)
+    elif opt in("-t","--toAddr="):
+        toAddr = arg
+    elif opt in("-f","--fromAddr="):
+        fromAddr = arg
 
 random.seed(time.clock())
 varargin_tokens = re.split(r'[\[\]]',parameters)[:-1]
 
-if email==1:
-    server = smtplib.SMTP('smtp.gmail.com:587')
-    fromAdd = 'GmailAddress'
-    toAdd = 'emailAddress'
-    server.starttls()
-    server.login('gmailaccount','emailpassword')
-runExp(module_name, varargin_tokens,fname_prefix=[],save=save,server=server)
+runExp(module_name, varargin_tokens,fname_prefix=[],save=save,email = email,toAddr = toAddr,fromAddr = fromAddr)
 '''    
     result_dir = '../Results/'
     if not os.isdir(result_dir):
