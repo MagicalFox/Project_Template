@@ -2,11 +2,15 @@
 # make sure that the Project Template folder structure is followed.  
 # In terminal run:  python batch_general.py -m tempCode -p 'p1 [ BB, UCF101] p2 [3, 1]'
 # Note:
-# 1. -m flag model name, the model has to have the code in def main()
-# 2. -p flag parameters which is passed in as one single string variable. each hyperparameter name is followed by a list of values in a pire of [] separated by space. The values in the lists are separated by ','.  
-# 3. string variable values can be in pairs of '' or "" or none.
-# 4. Log file use the naming convention that each token is separated by '_' so avoid naming variables using '_'
-# 5. Parameters are stored in both the start and finish log file. If the parameter has large volume, use -s 0 flag to supress saving.
+#   -m flag model name, the model has to have the code in def main()
+#   -p flag parameters which is passed in as one single string variable. each hyperparameter name is followed by a list of values in a pire of [] separated by space. The values in the lists are separated by ','.  
+#   -s save parameter to log file. 1: save, o.w.:don't save
+#   -e send email when each grid is finished. 1: send, o.w.: don't send
+#   -t reciever's email address
+#   -f sender's email address
+#   string variable values can be in pairs of '' or "" or none.
+#   Log file use the naming convention that each token is separated by '_' so avoid naming variables using '_'
+#   Parameters are stored in both the start and finish log file. If the parameter has large volume, use -s 0 flag to supress saving.
  
 # Example: 
 # python batch_general.py -m tempCode -p 'p1 [ BB, UCF101] p2 [3, 1]'
@@ -28,6 +32,7 @@ import pdb
 import time
 import random
 from os.path import isfile
+from email.mime.text import MIMEText
 
 def convertType(var):
     try:
@@ -38,13 +43,13 @@ def convertType(var):
         except:
             return var
 
-def runExp(fname_command, varargin,fname_prefix=[],save = 1,server=[]):
+def runExp(fname_command, varargin,fname_prefix=[],save = 1,email=1,toAddr=[],fromAddr=[],):
 
     if len(fname_prefix) ==0:
-        Log_dir = '../Results/Log/'
+        Log_dir = './Log/'
         if not os.path.isdir(Log_dir):
             os.makedirs(Log_dir)
-        fname_prefix = '../Results/Log/'+fname_command
+        fname_prefix = './Log/'+fname_command
         fname_command = fname_command + '('
 
     if len(varargin)>1:
@@ -75,39 +80,46 @@ def runExp(fname_command, varargin,fname_prefix=[],save = 1,server=[]):
             parameters = [convertType(parameters[i]) for i in range(len(parameters))] 
             if save ==1:
                 np.save(log_fname_started,parameters)
+ 
+            # execute main file
             module = __import__(module_name)
+            starttime = time.time()
             module.main(parameters)
+            exe_time = time.time()-starttime 
             os.remove(log_fname_started)
+            print str_cmd+' is finished. Using '+str(exe_time)+' seconds.'
             finish_log_id = open(log_fname_finished,'w')
-            if server != []:
-                msg = 'Subject: '+str_cmd+' has finished.'+'\n\n'
-		hostname = subprocess.Popen('hostname', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
+            if email != 0:
+                str_subject = str_cmd+' has finished.\n\n'
+                hostname = subprocess.Popen('hostname', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
                 screen_id = subprocess.Popen('echo $STY', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
                 win_id = subprocess.Popen('echo $WINDOW', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.readlines()[0]
-                msg = msg+'Job finished. \nHost: '+hostname+'Screen: '+screen_id+'Window: '+str(win_id)+'\n'
+                str_content = 'Job finished. \nHost: '+hostname+'Screen: '+screen_id+'Window: '+str(win_id)+'\n'+'Using '+str(exe_time)+' seconds.\n'
                 if save == 1:
-                    msg = msg+'Parameters has been saved to '+log_fname_finished
-                try:
-                    server.sendmail(fromAdd,toAdd,msg)
-                except:
-                    print 'Email Error: could not send email for job: ' + str_cmd
-                
+                    str_content = str_content+'Parameters has been saved to '+log_fname_finished+'\n'
+                msg = MIMEText(str_content)
+                msg["To"] = toAddr
+                msg["From"] = fromAddr
+                msg["Subject"] = str_subject
+                p = subprocess.Popen(["sendmail","-t","oi"],stdin=subprocess.PIPE)
+                p.communicate(msg.as_string())
             if save ==1: 
                 np.save(log_fname_finished,parameters)
         elif len(varargin) == 1:
             sys.exit('length of varargin should be even number!')
         else:
-            runExp(fname_command2+',', varargin,fname_prefix2, save = save,server=server)
+            runExp(fname_command2+',', varargin,fname_prefix2, save = save,email=email,toAddr = toAddr,fromAddr = fromAddr)
 
 
 
 
 save =1
 email = 1
-server = []
+toAddr = 'yeliu.system.mail@gmail.com'
+fromAddr = []
 try:
-    opts, args=getopt.getopt(sys.argv[1:], "hm:p:s:e:",
-            ["module_name=","parameters=","save=","email="])
+    opts, args=getopt.getopt(sys.argv[1:], "hm:p:s:e:t:f:",
+            ["module_name=","parameters=","save=","email=","toAddr=","fromAddr="])
 except getopt.GetoptError:
     print 'gae_demo.py -i <inputfile>'
     sys.exit(2)
@@ -123,17 +135,15 @@ for opt, arg in opts:
         save = int(arg)
     elif opt in("-e","--email="):
         email = int(arg)
+    elif opt in("-t","--toAddr="):
+        toAddr = arg
+    elif opt in("-f","--fromAddr="):
+        fromAddr = arg
 
 random.seed(time.clock())
 varargin_tokens = re.split(r'[\[\]]',parameters)[:-1]
 
-if email==1:
-    server = smtplib.SMTP('smtp.gmail.com:587')
-    fromAdd = 'yeliu.system.mail@gmail.com'
-    toAdd = 'yeliu.system.mail@gmail.com'
-    server.starttls()
-    server.login('yeliu.system.mail@gmail.com','machinelearning')
-runExp(module_name, varargin_tokens,fname_prefix=[],save=save,server=server)
+runExp(module_name, varargin_tokens,fname_prefix=[],save=save,email = email,toAddr = toAddr,fromAddr = fromAddr)
 '''    
     result_dir = '../Results/'
     if not os.isdir(result_dir):
